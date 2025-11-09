@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gemini API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #357ae8;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .loading {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 Test Gemini API Connection</h1>
+        <p>This tool helps you verify your Gemini API key is working correctly.</p>
+
+        <label for="apiKey"><strong>Your Gemini API Key:</strong></label>
+        <input type="text" id="apiKey" placeholder="AIzaSyC..." value="" />
+
+        <button onclick="testAPI()" id="testBtn">Test API Connection</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+            const testBtn = document.getElementById('testBtn');
+
+            if (!apiKey) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please enter your API key';
+                return;
+            }
+
+            testBtn.disabled = true;
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = '⏳ Testing API connection...';
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: 'Say "Hello! The API is working correctly." in one sentence.'
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API returned ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.candidates[0].content.parts[0].text;
+
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `✅ <strong>SUCCESS!</strong> Your Gemini API key is working!\n\nAPI Response:\n${aiResponse}\n\n✨ You can now use this API key in your .env file:\nVITE_GEMINI_API_KEY=${apiKey}`;
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ <strong>ERROR</strong>\n\n${error.message}\n\n<strong>Common Issues:</strong>\n1. Invalid API key\n2. API key doesn't have Gemini API enabled\n3. Billing not set up in Google Cloud\n4. Rate limit exceeded\n\nGet a new key at: https://makersuite.google.com/app/apikey`;
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+
+        // Auto-fill API key from localStorage for convenience
+        window.onload = () => {
+            const savedKey = localStorage.getItem('gemini_test_key');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+            }
+
+            document.getElementById('apiKey').addEventListener('input', (e) => {
+                localStorage.setItem('gemini_test_key', e.target.value);
+            });
+        };
+    </script>
+</body>
+
+</html>
